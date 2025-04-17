@@ -3,6 +3,10 @@ using Domain.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 using Persistence.Data;
+using Persistence.Repositories;
+using Services.Abstractions;
+using Services.MappingProfiles;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 namespace ApiProject
@@ -26,6 +30,9 @@ namespace ApiProject
             builder.Services.AddSwaggerGen();
             builder.Services.AddScoped<IDbInitializer, DbInitializer>();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddAutoMapper(x=> x.AddProfile(new ProductProfile()));
+            builder.Services.AddScoped<IServiceManager, ServiceManager>();
+            builder.Services.AddTransient<PictureUrlResolver>();
 
 
             var app = builder.Build();
@@ -37,7 +44,7 @@ namespace ApiProject
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseStaticFiles();
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
