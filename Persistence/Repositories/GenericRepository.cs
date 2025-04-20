@@ -26,8 +26,7 @@ namespace Persistence.Repositories
             if (isTrackable)
                 return await _context.Set<TEntity>().ToListAsync();
 
-                return await _context.Set<TEntity>().AsNoTracking()
-                                                .ToListAsync();
+                return await _context.Set<TEntity>().AsNoTracking().ToListAsync();
         }
 
         public async Task<IEnumerable<TEntity>> GetAllAsync(Specification<TEntity> specifications)
@@ -45,5 +44,7 @@ namespace Persistence.Repositories
         public void Update(TEntity entity)
                  =>  _context.Set<TEntity>().Update(entity);
 
+        public async Task<int> CountAsync(Specification<TEntity> specification)
+        => await ApplySpecification(specification).CountAsync();
     }
 }

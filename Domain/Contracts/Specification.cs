@@ -11,10 +11,25 @@ namespace Domain.Contracts
     {
         protected Specification(Expression<Func<T, bool>> criteria)
         {
-            Criteria = criteria;    
+            Criteria = criteria;
         }
-        public Expression<Func<T,bool>> Criteria { get; }
-        public List<Expression<Func<T,object>>> Includes { get; }
-        protected void AddInclude(Expression<Func<T,object>> expression) => Includes.Add(expression);
+        public Expression<Func<T, bool>> Criteria { get; }
+        public List<Expression<Func<T, object>>> Includes { get; private set; }
+        public Expression<Func<T, object>> OrderBy { get; private set; }
+        public Expression<Func<T, object>> OrderByDescending { get; private set; }
+        public int Skip { get; private set; }
+        public int Take { get; private set; }
+        public bool IsPagingEnabled { get; private set; }
+        protected void AddInclude(Expression<Func<T, object>> expression) => Includes.Add(expression);
+        protected void SetOrderBy(Expression<Func<T, object>> orderBy)
+            => OrderBy = orderBy;
+        protected void SetOrderByDescending(Expression<Func<T, object>> orderByDescending)
+            => OrderByDescending = orderByDescending;
+        protected void ApplyPagination(int pageIndex, int pageSize)
+        {
+            IsPagingEnabled = true;
+            Take = pageSize;
+            Skip = (pageIndex - 1) * pageSize;
+        }
     }
 }
