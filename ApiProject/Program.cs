@@ -1,11 +1,16 @@
 
+using ApiProject.Factories;
+using ApiProject.Middlewares;
 using Domain.Contracts;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 using Persistence.Data;
 using Persistence.Repositories;
+using Services;
 using Services.Abstractions;
 using Services.MappingProfiles;
+using StackExchange.Redis;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
@@ -26,17 +31,26 @@ namespace ApiProject
             }
             );
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddSingleton<IConnectionMultiplexer>
+                (_ => ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddScoped<IDbInitializer, DbInitializer>();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddScoped<IBasketRepository, BasketRepository>();
             builder.Services.AddAutoMapper(x=> x.AddProfile(new ProductProfile()));
+            builder.Services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.InvalidModelStateResponseFactory = ApiResponseFactory.CustomValidationErrorResponse;
+            });
             builder.Services.AddScoped<IServiceManager, ServiceManager>();
             builder.Services.AddTransient<PictureUrlResolver>();
+           
 
 
             var app = builder.Build();
             await SeedDbAsync(app);
+            app.UseMiddleware<GlobalErrorHandlingMiddleware>();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
