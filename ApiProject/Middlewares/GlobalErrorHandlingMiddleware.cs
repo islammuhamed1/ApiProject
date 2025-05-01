@@ -52,6 +52,7 @@ namespace ApiProject.Middlewares
             };
             htttpContext.Response.StatusCode = ex switch
             {
+                UnAuthorizedException => (int)HttpStatusCode.Unauthorized,
                 NotFoundException => (int)HttpStatusCode.NotFound,
                 ValidationException validationException => HandleValidationException(validationException,response) ,
                 _ => (int)HttpStatusCode.InternalServerError

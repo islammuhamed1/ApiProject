@@ -1,4 +1,5 @@
 
+using ApiProject.Extensions;
 using ApiProject.Factories;
 using ApiProject.Middlewares;
 using Domain.Contracts;
@@ -6,10 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 using Persistence.Data;
+using Persistence.Identity;
 using Persistence.Repositories;
 using Services;
 using Services.Abstractions;
 using Services.MappingProfiles;
+using Shared.IdentityDtos;
 using StackExchange.Redis;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
@@ -23,33 +26,23 @@ namespace ApiProject
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddCoreServices(builder.Configuration);
+            builder.Services.AddPresentationServices();
 
             builder.Services.AddControllers();
-            builder.Services.AddDbContext<StoreDbContext>(options =>
-            {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-            }
-            );
+          
+            
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddSingleton<IConnectionMultiplexer>
-                (_ => ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            builder.Services.AddScoped<IDbInitializer, DbInitializer>();
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddScoped<IBasketRepository, BasketRepository>();
-            builder.Services.AddAutoMapper(x=> x.AddProfile(new ProductProfile()));
-            builder.Services.Configure<ApiBehaviorOptions>(options =>
-            {
-                options.InvalidModelStateResponseFactory = ApiResponseFactory.CustomValidationErrorResponse;
-            });
-            builder.Services.AddScoped<IServiceManager, ServiceManager>();
+      
+          
+           
             builder.Services.AddTransient<PictureUrlResolver>();
            
 
 
             var app = builder.Build();
-            await SeedDbAsync(app);
+            await app.SeedDbAsync();
             app.UseMiddleware<GlobalErrorHandlingMiddleware>();
 
             // Configure the HTTP request pipeline.
@@ -60,6 +53,7 @@ namespace ApiProject
             }
             app.UseStaticFiles();
             app.UseHttpsRedirection();
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
@@ -68,11 +62,6 @@ namespace ApiProject
 
             app.Run();
         }
-        static async Task SeedDbAsync(WebApplication app)
-        {
-            using var scope = app.Services.CreateScope();
-            var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-           await dbInitializer.InitializeAsync();
-        }
+       
     }
 }
