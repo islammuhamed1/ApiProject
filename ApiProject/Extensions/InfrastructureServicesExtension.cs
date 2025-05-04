@@ -1,18 +1,16 @@
 ﻿using Domain.Contracts;
 using Domain.Entities.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Persistence;
 using Persistence.Data;
 using Persistence.Identity;
 using Persistence.Repositories;
 using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-
 namespace ApiProject.Extensions
 {
     public static class InfrastructureServicesExtension
@@ -35,6 +33,7 @@ namespace ApiProject.Extensions
                 _ => ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis"))
                 );
             services.ConfigureIdentity();
+            services.ConfigureIJwt(configuration);
             return services;
         }
 
@@ -49,6 +48,33 @@ namespace ApiProject.Extensions
                 options.Password.RequiredLength = 12;
                 options.User.RequireUniqueEmail = true;
             }).AddEntityFrameworkStores<StoreIdentityDbContext>();
+
+            return services;
+        }
+
+        private static IServiceCollection ConfigureIJwt(this IServiceCollection services, IConfiguration configuration)
+        {
+            var jwtConfig = configuration.GetSection("JwtOptions");
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidAudience = jwtConfig["ValidAudience"],
+                    ValidIssuer = jwtConfig["ValidIssuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig["SecurityKey"])),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
 
             return services;
         }
